@@ -1,0 +1,936 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Identifier": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Uniquely identify your resources."
+      }
+    },
+    "Deploy Type": {
+      "type": "string",
+      "metadata": {
+        "description": "deploy type to manager resources."
+      },
+      "defaultValue": "normal",
+      "allowedValues": [
+        "normal",
+        "privateWithNAT",
+        "privateWithoutNAT"
+      ]
+    },
+    "VnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "the resource id of vnet that KC will use"
+      }
+    },
+    "SubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet Name that KC will be deploy into"
+      }
+    },
+    "Application ID": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure active directory application id."
+      }
+    },
+    "Application Key": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure active directory application key."
+      }
+    },
+    "Tenant ID": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure AD tenant id."
+      }
+    },
+    "VM SSH Username": {
+      "type": "string",
+      "minLength": 3,
+      "metadata": {
+        "description": "Username for login vm. The supplied username should contain at least 3 character."
+      }
+    },
+    "VM SSH Password": {
+      "type": "securestring",
+      "minLength": 6,
+      "maxLength": 72,
+      "metadata": {
+        "description": "Password for login vm. The supplied password must be between 6 and 72 characters long and must meet at least 3 of the following password complexity requirements: 1) contain an uppercase character; 2) contain a lowercase character; 3) contain a number; 4) contain one Special characters; 5) control characters are not allowed"
+      }
+    },
+    "VM Type": {
+      "type": "string",
+      "defaultValue": "Standard_DS2_v2",
+      "metadata": {
+        "description": "Choose vm size for deploy server.Standard_DS1_v2(1 vCPU, 3.5GB Memory)、Standard_DS2_v2(2 vCPU, 7GB Memory)、Standard_DS3_v2(4 vCPU, 14GB Memory)、Standard_DS4_v2(8 vCPU, 28GB Memory)、Standard_DS5_v2(16 vCPU, 56GB Memory)"
+      }
+    },
+    "ZkInstancetype": {
+      "type": "string",
+      "defaultValue": "Standard_DS2_v2",
+      "metadata": {
+        "description": "Choose vm size for deploy server.Standard_DS1_v2(1 vCPU, 3.5GB Memory)、Standard_DS2_v2(2 vCPU, 7GB Memory)、Standard_DS3_v2(4 vCPU, 14GB Memory)、Standard_DS4_v2(8 vCPU, 28GB Memory)、Standard_DS5_v2(16 vCPU, 56GB Memory)"
+      }
+    },
+    "ZkDiskType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS"
+    },
+    "InstanceCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Instance count of Kyligence Cloud"
+      }
+    },
+    "TrustCidrs": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "init trusted cidr, you can later modify it in your portal"
+      }
+    },
+    "DB Engine Type": {
+      "type": "string",
+      "defaultValue": "mysql",
+      "allowedValues": [
+        "mysql",
+        "postgresql"
+      ],
+      "metadata": {
+        "description": "Enable or disable monitor"
+      }
+    },
+    "Database Name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Azure MySQL Database"
+      }
+    },
+    "DBUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "DB Admin Username"
+      }
+    },
+    "DBPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "DB Admin password"
+      }
+    },
+    "Storage Account Name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of Storage Account which will be used to store Kyligence logs, indexes, etc."
+      }
+    },
+    "VM disk type": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "metadata": {
+        "description": "VM disk type"
+      }
+    },
+    "Tags": {
+      "type": "string",
+      "metadata": {
+        "description": "custom tags"
+      }
+    },
+    "Location": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource location."
+      }
+    },
+    "S3BucketUrlGlobal": {
+      "type": "string",
+      "defaultValue": "https://s3.amazonaws.com/public.kyligence.io/kycloud/version/4.3.0/prod",
+      "metadata": {
+        "description": "bucket global"
+      }
+    },
+    "LocalStore": {
+      "type": "string",
+      "defaultValue": "false",
+      "allowedValues": [
+        "false",
+        "true"
+      ],
+      "metadata": {
+        "description": "use of local store."
+      }
+    },
+    "Monitor": {
+      "type": "string",
+      "defaultValue": "enable",
+      "allowedValues": [
+        "enable"
+      ],
+      "metadata": {
+        "description": "Enable or disable monitor"
+      }
+    },
+    "enableHierarchicalNamespace": {
+      "type": "string",
+      "metadata": {
+        "description": "Enable storage account hierarchical namespace."
+      },
+      "defaultValue": "false",
+      "allowedValues": [
+        "true",
+        "false"
+      ]
+    },
+    "LokiOption": {
+      "type": "string",
+      "defaultValue": "enable",
+      "allowedValues": [
+        "enable",
+        "disable"
+      ],
+      "metadata": {
+        "description": "Enable or disable Loki"
+      }
+    },
+    "ImagePlanCustom": {
+      "type": "string",
+      "defaultValue": "false",
+      "allowedValues": [
+        "false"
+      ],
+      "metadata": {
+        "description": "Image plan custom or not"
+      }
+    },
+    "ImagePlanName": {
+      "type": "string",
+      "defaultValue": "rhel-raw-ci76",
+      "metadata": {
+        "description": "Name of Image Plan"
+      }
+    },
+    "ImagePlanPublisher": {
+      "type": "string",
+      "defaultValue": "false",
+      "metadata": {
+        "description": "Publisher of Image Plan"
+      }
+    },
+    "ImagePlanProduct": {
+      "type": "string",
+      "defaultValue": "rhel-byos",
+      "metadata": {
+        "description": "Product of Image Plan"
+      }
+    },
+    "ImageCustom": {
+      "type": "string",
+      "defaultValue": "false",
+      "allowedValues": [
+        "false",
+        "true"
+      ],
+      "metadata": {
+        "description": "Use Default Vm Image or not"
+      }
+    },
+    "ImagePublisher": {
+      "type": "string",
+      "defaultValue": "RedHat",
+      "metadata": {
+        "description": "Custom Image Publisher"
+      }
+    },
+    "ImageOffer": {
+      "type": "string",
+      "defaultValue": "RHEL",
+      "metadata": {
+        "description": "Custom Image Offer"
+      }
+    },
+    "ImageSku": {
+      "type": "string",
+      "defaultValue": "7-RAW-CI",
+      "metadata": {
+        "description": "Custom Image Sku"
+      }
+    },
+    "ImageVersion": {
+      "type": "string",
+      "defaultValue": "7.7.2019081601",
+      "metadata": {
+        "description": "Custom Image Version"
+      }
+    },
+    "Protocol": {
+      "metadata": {
+        "description": "http or https of kyligence cloud"
+      },
+      "type": "string",
+      "allowedValues": [
+        "HTTP",
+        "HTTPS"
+      ],
+      "defaultValue": "HTTP"
+    }
+  },
+  "resources": [
+    {
+      "name": "[variables('vminstanceNicName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers/', variables('lbName'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/', variables('publicLbName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
+      ],
+      "tags": "[variables('tags')]",
+      "properties": {
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupName'))]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('vminstanceSubnetRef')]"
+              },
+              "loadBalancerBackendAddressPools": "[variables('vmBackPool')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[variables('vminstanceName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[variables('location')]",
+      "apiVersion": "2019-07-01",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('vminstanceNicName'))]"
+      ],
+      "tags": "[union(variables('KCTag'),variables('tags'))]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('VM Type')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(variables('vminstanceName'))]",
+          "adminUsername": "[parameters('VM SSH Username')]",
+          "adminPassword": "[parameters('VM SSH Password')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('vminstanceImagePublisher')]",
+            "offer": "[variables('vminstanceImageOffer')]",
+            "sku": "[variables('vminstanceImageSku')]",
+            "version": "[variables('vminstanceImageVersion')]"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "diskSizeGB": 64,
+            "managedDisk": {
+              "storageAccountType": "[parameters('VM disk type')]"
+            }
+          },
+          "dataDisks": "[variables('lightningDataDiskValue')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('vminstanceNicName')))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "apiVersion": "2019-07-01",
+          "type": "extensions",
+          "name": "config-app",
+          "location": "[variables('location')]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', variables('vminstanceName'))]"
+          ],
+          "tags": "[variables('tags')]",
+          "properties": {
+            "publisher": "Microsoft.Azure.Extensions",
+            "type": "CustomScript",
+            "typeHandlerVersion": "2.0",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "fileUris": [
+                "[concat(variables('s3endpointPrefix'), '/scripts/',variables('vmKcInitSh'))]"
+              ]
+            },
+            "protectedSettings": {
+              "commandToExecute": "[concat('sudo sh', ' ', variables('vmKcInitSh'), ' ', variables('databaseName'), ' ', variables('dbEndpoint'), ' ', variables('databaseLoginName'),' ', variables('base64DatabaseLoginPassword'),' ', variables('optenv'),' ', variables('subscriptionid'),' ', parameters('Application ID'),' ', parameters('Application Key'),' ', parameters('Tenant ID'),' ', variables('storageName'),' ', variables('storageContainerName'),' ', variables('newtenDbName'),' ', variables('s3endpointPrefix'),' ', variables('pTrustCidrs'),' ', variables('internal'),' ', variables('base64Tags'),' ', variables('blobEndpoint'),' ','1',' ',reference(resourceId('Microsoft.Network/networkInterfaces',variables('vminstanceNicName'))).ipConfigurations[0].properties.privateIPAddress,' ',if(variables('isHa'),reference(resourceId('Microsoft.Network/networkInterfaces',concat(variables('vminstanceNicName'),'-ha'))).ipConfigurations[0].properties.privateIPAddress,'null'),' ',if(variables('isHa'),reference(resourceId('Microsoft.Network/networkInterfaces',concat(variables('vminstanceNicName'),'-zk'))).ipConfigurations[0].properties.privateIPAddress,'null'),' ',parameters('Monitor'), ' ', variables('blobScheme'),' ',parameters('LokiOption'),' ',parameters('ImagePlanCustom'),' ',parameters('ImagePlanName'),' ',parameters('ImagePlanPublisher'),' ',parameters('ImagePlanProduct'),' ',parameters('ImageCustom'),' ',parameters('ImagePublisher'),' ',parameters('ImageOffer'),' ',parameters('ImageSku'),' ',parameters('ImageVersion'),' ',parameters('Protocol'),' ','-',' ', parameters('DB Engine Type'),' ',parameters('LocalStore'),' ',variables('azureCommonPublicBackendPoolId'))]"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('networkSecurityGroupName')]",
+      "location": "[variables('location')]",
+      "tags": "[variables('tags')]",
+      "properties": {
+        "securityRules": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(variables('networkSecurityGroupName'), '/ln_rule')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ],
+      "condition": "[equals(parameters('Deploy Type'),'normal')]",
+      "properties": {
+        "description": "open web port",
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "8079",
+        "sourceAddressPrefix": "[parameters('TrustCidrs')]",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 126,
+        "direction": "Inbound"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(variables('networkSecurityGroupName'), '/ln_rule_https')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ],
+      "condition": "[equals(parameters('Deploy Type'),'normal')]",
+      "properties": {
+        "description": "open web port",
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "443",
+        "sourceAddressPrefix": "[parameters('TrustCidrs')]",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 127,
+        "direction": "Inbound"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(variables('networkSecurityGroupName'), '/ln_rule80')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ],
+      "condition": "[equals(parameters('Deploy Type'),'normal')]",
+      "properties": {
+        "description": "open web port",
+        "protocol": "Tcp",
+        "sourcePortRange": "*",
+        "destinationPortRange": "80",
+        "sourceAddressPrefix": "[parameters('TrustCidrs')]",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 128,
+        "direction": "Inbound"
+      }
+    },
+    {
+      "apiVersion": "2019-06-01",
+      "name": "[variables('lbName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('lbPublicIpName'))]"
+      ],
+      "tags": "[variables('tags')]",
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "[variables('lbFrontEndName')]",
+            "properties": "[variables('lbProperty')]"
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('lbBackendPoolName')]"
+          }
+        ],
+        "loadBalancingRules": [
+          {
+            "name": "HTTPLBRule",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', variables('lbName'), variables('lbFrontEndName'))]"
+              },
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('lbBackendPoolName'))]"
+              },
+              "frontendPort": 8079,
+              "backendPort": 8079,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "probe": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', variables('lbName'), variables('lbProbeName'))]"
+              }
+            }
+          },
+          {
+            "name": "HTTPSLBRule",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', variables('lbName'), variables('lbFrontEndName'))]"
+              },
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('lbBackendPoolName'))]"
+              },
+              "frontendPort": 443,
+              "backendPort": 443,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "probe": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', variables('lbName'), variables('lbProbeName'))]"
+              }
+            }
+          },
+          {
+            "name": "HTTPLBRule80",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', variables('lbName'), 'LoadBalancerFrontEnd')]"
+              },
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), 'LoadBalancerBackEndPool')]"
+              },
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false,
+              "idleTimeoutInMinutes": 4,
+              "protocol": "Tcp",
+              "enableTcpReset": false,
+              "loadDistribution": "Default",
+              "disableOutboundSnat": false,
+              "probe": {
+                "id": "[resourceId('Microsoft.Network/loadBalancers/probes', variables('lbName'), variables('lbProbeName'))]"
+              }
+            }
+          }
+        ],
+        "probes": [
+          {
+            "name": "[variables('lbProbeName')]",
+            "properties": {
+              "protocol": "Tcp",
+              "port": 8087,
+              "intervalInSeconds": 5,
+              "numberOfProbes": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2019-06-01",
+      "name": "[variables('publicLbName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "condition": "[equals(parameters('Deploy Type'),'privateWithNAT')]",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('lbPublicIpName'))]"
+      ],
+      "tags": "[variables('tags')]",
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "[variables('publicLbFrontEndName')]",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId(variables('resourceGroupName'), 'Microsoft.Network/publicIPAddresses', variables('lbPublicIpName'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('publicLbBackendPoolName')]"
+          }
+        ],
+        "outboundRules": [
+          {
+            "name": "commonOutboundRule",
+            "properties": {
+              "allocatedOutboundPorts": 0,
+              "protocol": "All",
+              "enableTcpReset": true,
+              "idleTimeoutInMinutes": 4,
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('publicLbName')) , '/backendAddressPools/',variables('publicLbBackendPoolName'))]"
+              },
+              "frontendIPConfigurations": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('publicLbName')), '/frontendIPConfigurations/', variables('publicLbFrontEndName'))]"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[not(equals(parameters('Deploy Type'),'privateWithoutNAT'))]",
+      "apiVersion": "2019-02-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('lbPublicIpName')]",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "tags": "[variables('tags')]",
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "publicIPAddressVersion": "IPv4"
+      }
+    },
+    {
+      "condition": "[variables('isHa')]",
+      "name": "[concat(variables('vminstanceNicName'),'-ha')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers/', variables('lbName'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/', variables('publicLbName'))]"
+      ],
+      "tags": "[variables('tags')]",
+      "properties": {
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupName'))]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "ipconfig-ha",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('vminstanceSubnetRef')]"
+              },
+              "loadBalancerBackendAddressPools": "[variables('vmBackPool')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[variables('isHa')]",
+      "name": "[concat(variables('vminstanceName'),'-ha')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[variables('location')]",
+      "apiVersion": "2019-07-01",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', concat(variables('vminstanceNicName'),'-ha'))]"
+      ],
+      "tags": "[union(variables('KCHATag'),variables('tags'))]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('VM Type')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(variables('vminstanceName'),'-ha')]",
+          "adminUsername": "[parameters('VM SSH Username')]",
+          "adminPassword": "[parameters('VM SSH Password')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('vminstanceImagePublisher')]",
+            "offer": "[variables('vminstanceImageOffer')]",
+            "sku": "[variables('vminstanceImageSku')]",
+            "version": "[variables('vminstanceImageVersion')]"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "diskSizeGB": 64,
+            "managedDisk": {
+              "storageAccountType": "[parameters('VM disk type')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('vminstanceNicName'),'-ha'))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "condition": "[variables('isHa')]",
+          "apiVersion": "2019-07-01",
+          "type": "extensions",
+          "name": "config-app",
+          "location": "[variables('location')]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', variables('vminstanceName'),'-ha')]"
+          ],
+          "tags": "[variables('tags')]",
+          "properties": {
+            "publisher": "Microsoft.Azure.Extensions",
+            "type": "CustomScript",
+            "typeHandlerVersion": "2.0",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "fileUris": [
+                "[concat(variables('s3endpointPrefix'), '/scripts/',variables('vmKcInitSh'))]"
+              ]
+            },
+            "protectedSettings": {
+              "commandToExecute": "[concat('sudo sh', ' ', variables('vmKcInitSh'), ' ', variables('databaseName'), ' ', variables('dbEndpoint'), ' ', variables('databaseLoginName'),' ', variables('base64DatabaseLoginPassword'),' ', variables('optenv'),' ', variables('subscriptionid'),' ', parameters('Application ID'),' ', parameters('Application Key'),' ', parameters('Tenant ID'),' ', variables('storageName'),' ', variables('storageContainerName'),' ', variables('newtenDbName'),' ', variables('s3endpointPrefix'),' ', variables('pTrustCidrs'),' ', variables('internal'),' ', variables('base64Tags'),' ', variables('blobEndpoint'),' ','2',' ',reference(resourceId('Microsoft.Network/networkInterfaces',variables('vminstanceNicName'))).ipConfigurations[0].properties.privateIPAddress,' ',if(variables('isHa'),reference(resourceId('Microsoft.Network/networkInterfaces',concat(variables('vminstanceNicName'),'-ha'))).ipConfigurations[0].properties.privateIPAddress,'null'),' ',if(variables('isHa'),reference(resourceId('Microsoft.Network/networkInterfaces',concat(variables('vminstanceNicName'),'-zk'))).ipConfigurations[0].properties.privateIPAddress,'null'),' ','disable', ' ', variables('blobScheme'),' ',parameters('LokiOption'),' ',parameters('ImagePlanCustom'),' ',parameters('ImagePlanName'),' ',parameters('ImagePlanPublisher'),' ',parameters('ImagePlanProduct'),' ',parameters('ImageCustom'),' ',parameters('ImagePublisher'),' ',parameters('ImageOffer'),' ',parameters('ImageSku'),' ',parameters('ImageVersion'),' ',parameters('Protocol'),' ','-',' ', parameters('DB Engine Type'), ' ', parameters('LocalStore'),' ', variables('azureCommonPublicBackendPoolId'))]"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "condition": "[variables('isHa')]",
+      "name": "[concat(variables('vminstanceNicName'),'-zk')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[variables('location')]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers/', variables('lbName'))]",
+        "[resourceId('Microsoft.Network/loadBalancers/', variables('publicLbName'))]"
+      ],
+      "tags": "[variables('tags')]",
+      "properties": {
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('networkSecurityGroupName'))]"
+        },
+        "ipConfigurations": [
+          {
+            "name": "ipconfig-zk",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('vminstanceSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[variables('isHa')]",
+      "name": "[concat(variables('vminstanceName'),'-zk')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[variables('location')]",
+      "apiVersion": "2019-07-01",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', concat(variables('vminstanceNicName'),'-zk'))]"
+      ],
+      "tags": "[union(variables('ZKTag'),variables('tags'))]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('ZkInstancetype')]"
+        },
+        "osProfile": {
+          "computerName": "[concat(variables('vminstanceName'),'-zk')]",
+          "adminUsername": "[parameters('VM SSH Username')]",
+          "adminPassword": "[parameters('VM SSH Password')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('vminstanceImagePublisher')]",
+            "offer": "[variables('vminstanceImageOffer')]",
+            "sku": "[variables('vminstanceImageSku')]",
+            "version": "[variables('vminstanceImageVersion')]"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "diskSizeGB": 64,
+            "managedDisk": {
+              "storageAccountType": "[parameters('ZkDiskType')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('vminstanceNicName'),'-zk'))]"
+            }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "condition": "[variables('isHa')]",
+          "apiVersion": "2019-07-01",
+          "type": "extensions",
+          "name": "config-app",
+          "location": "[variables('location')]",
+          "dependsOn": [
+            "[concat('Microsoft.Compute/virtualMachines/', variables('vminstanceName'),'-zk')]"
+          ],
+          "tags": "[variables('tags')]",
+          "properties": {
+            "publisher": "Microsoft.Azure.Extensions",
+            "type": "CustomScript",
+            "typeHandlerVersion": "2.0",
+            "autoUpgradeMinorVersion": true,
+            "settings": {
+              "fileUris": [
+                "[concat(variables('s3endpointPrefix'),'/scripts/',variables('vmZkInitSh'))]"
+              ]
+            },
+            "protectedSettings": {
+              "commandToExecute": "[concat('sudo sh', ' ', variables('vmZkInitSh'), ' ', variables('s3endpointPrefix'),' ','3',' ',reference(resourceId('Microsoft.Network/networkInterfaces',variables('vminstanceNicName'))).ipConfigurations[0].properties.privateIPAddress,' ',if(variables('isHa'),reference(resourceId('Microsoft.Network/networkInterfaces',concat(variables('vminstanceNicName'),'-ha'))).ipConfigurations[0].properties.privateIPAddress,'null'),' ',if(variables('isHa'),reference(resourceId('Microsoft.Network/networkInterfaces',concat(variables('vminstanceNicName'),'-zk'))).ipConfigurations[0].properties.privateIPAddress,'null'),' ',variables('databaseName'), ' ', variables('dbEndpoint'), ' ', variables('databaseLoginName'),' ', variables('base64DatabaseLoginPassword'),' ', parameters('DB Engine Type'))]"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "basename": "kyligence",
+    "resourceGroupName": "[resourceGroup().name]",
+    "optenv": "[if(contains(resourceGroup().location,'china'),'AzureChinaCloud','AzureCloud')]",
+    "blobprefix": "[if(contains(resourceGroup().location,'china'),'https://lightning.blob.core.chinacloudapi.cn/lightningpub','https://kyligencekeys.blob.core.windows.net/lightningpub')]",
+    "subscriptionid": "[subscription().subscriptionId]",
+    "databaseName": "[parameters('Database Name')]",
+    "alluxio_package": "alluxio-2.2.1-bin.tar.gz",
+    "newtenDbName": "kylin",
+    "databaseLoginName": "[parameters('DBUsername')]",
+    "databaseLoginPassword": "[parameters('DBPassword')]",
+    "base64DatabaseLoginPassword": "[base64(parameters('DBPassword'))]",
+    "vminstanceName": "[concat(variables('basename'), '-', toLower(parameters('Identifier')),'vm')]",
+    "publicLbName": "[concat(variables('basename'), '-', toLower(parameters('Identifier')),'publicLb')]",
+    "lbName": "[concat(variables('basename'), '-', toLower(parameters('Identifier')),'lb')]",
+    "lbPublicIpName": "[concat(variables('basename'), '-', toLower(parameters('Identifier')),'publicip')]",
+    "lbBackendPoolName": "LoadBalancerBackEndPool",
+    "publicLbBackendPoolName": "publicLoadBalancerBackEndPool",
+    "lbProbeName": "loadBalancerHealthProbe",
+    "lbFrontEndName": "LoadBalancerFrontEnd",
+    "publicLbFrontEndName": "publicLoadBalancerFrontEnd",
+    "vminstanceImagePublisher": "[if(equals(parameters('ImageCustom'), 'true'), parameters('ImagePublisher'), 'Canonical')]",
+    "vminstanceImageOffer": "[if(equals(parameters('ImageCustom'), 'true'), parameters('ImageOffer'), 'UbuntuServer')]",
+    "vminstanceImageSku": "[if(equals(parameters('ImageCustom'), 'true'), parameters('ImageSku'), '18.04-LTS')]",
+    "vminstanceImageVersion": "[if(equals(parameters('ImageCustom'), 'true'), parameters('ImageVersion'), 'latest')]",
+    "vmKcInitSh": "[if(or(equals(parameters('ImageCustom'), 'false'),and(equals(parameters('ImageOffer'), 'UbuntuServer'),equals(parameters('ImageCustom'), 'true'))), 'kc3_deployment.sh', 'kc3_deployment_centos.sh')]",
+    "vmZkInitSh": "[if(or(equals(parameters('ImageCustom'), 'false'),and(equals(parameters('ImageOffer'), 'UbuntuServer'),equals(parameters('ImageCustom'), 'true'))), 'zk_deployment.sh', 'zk_deployment_centos.sh')]",
+    "vminstanceVnetID": "[parameters('VnetId')]",
+    "vminstanceSubnetRef": "[concat(variables('vminstanceVnetID'), '/subnets/', parameters('SubnetName'))]",
+    "vminstanceNicName": "[concat(variables('vminstanceName'), 'nic')]",
+    "storageName": "[parameters('Storage Account Name')]",
+    "storageContainerName": "[concat(variables('basename'), '-', toLower(parameters('Identifier')))]",
+    "blobEndpointMiddle": "[if(equals(parameters('enableHierarchicalNamespace'), 'true'), 'dfs', 'blob')]",
+    "blobEndpoint": "[if(contains(resourceGroup().location,'china'),concat(variables('blobEndpointMiddle'), '.core.chinacloudapi.cn'), concat(variables('blobEndpointMiddle'), '.core.windows.net'))]",
+    "networkSecurityGroupName": "[concat(variables('basename'), '-', toLower(parameters('Identifier')), 'sg')]",
+    "s3endpointPrefix": "[parameters('S3BucketUrlGlobal')]",
+    "dbEndpoint": "[if(contains(resourceGroup().location,'china'),'.database.chinacloudapi.cn','.database.azure.com')]",
+    "tags": "[json(parameters('Tags'))]",
+    "base64Tags": "[base64(parameters('Tags'))]",
+    "publicIpCount": "[if(equals(parameters('Deploy Type'),'privateWithoutNAT'), 0 ,1)]",
+    "publicLbCount": "[if(equals(parameters('Deploy Type'),'privateWithNAT'), 1 , 0)]",
+    "lbPublicIp": "[if(equals(parameters('Deploy Type'),'normal'),resourceId(variables('resourceGroupName'), 'Microsoft.Network/publicIPAddresses', variables('lbPublicIpName')),'')]",
+    "publicLbIPProperty": {
+      "publicIPAddress": {
+        "id": "[variables('lbPublicIp')]"
+      }
+    },
+    "KCTag": {
+      "kyligence:cloud:vm-type": "#kc#zookeeper#influxdb#"
+    },
+    "lightningDataDiskValue": "[if(equals(parameters('Monitor'), 'enable'),variables('lightningDataDisk') , '')]",
+    "lightningDataDisk": [
+      {
+        "lun": "0",
+        "createOption": "Empty",
+        "diskSizeGB": 128,
+        "managedDisk": {
+          "storageAccountType": "Standard_LRS"
+        }
+      }
+    ],
+    "KCHATag": {
+      "kyligence:cloud:vm-type": "#kc#zookeeper#influxdb#"
+    },
+    "ZKTag": {
+      "kyligence:cloud:vm-type": "#zookeeper#"
+    },
+    "privateLbIpProperty": {
+      "privateIPAllocationMethod": "Dynamic",
+      "subnet": {
+        "id": "[variables('vminstanceSubnetRef')]"
+      }
+    },
+    "lbProperty": "[if(equals(parameters('Deploy Type'),'normal'),variables('publicLbIPProperty'),variables('privateLbIpProperty'))]",
+    "internal": "[if(equals(parameters('Deploy Type'),'normal'),'false','true')]",
+    "azureCommonPublicBackendPoolId": "[if(equals(parameters('Deploy Type'),'privateWithNAT'),resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('publicLbName'), variables('publicLbBackendPoolName')),'')]",
+    "pTrustCidrs": "[concat('trustCidrs:', parameters('TrustCidrs'))]",
+    "normalPool": [
+      {
+        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('lbBackendPoolName'))]"
+      }
+    ],
+    "natPool": [
+      {
+        "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('lbBackendPoolName'))]"
+      },
+      {
+        "id": "[variables('azureCommonPublicBackendPoolId')]"
+      }
+    ],
+    "vmBackPool": "[if(equals(parameters('Deploy Type'),'privateWithNAT'),variables('natPool'),variables('normalPool'))]",
+    "location": "[if(empty(parameters('Location')),resourceGroup().location,parameters('Location'))]",
+    "isHa": "[equals(parameters('InstanceCount'),2)]",
+    "blobScheme": "[if(equals(parameters('enableHierarchicalNamespace'), 'true'), 'abfs', 'wasb')]",
+    "dbVersion": "[if(equals(parameters('DB Engine Type'),'mysql'),'5.7','10')]",
+    "isMysql": "[equals(parameters('DB Engine Type'),'mysql')]",
+    "isPostgreSql": "[equals(parameters('DB Engine Type'),'postgresql')]"
+  },
+  "outputs": {
+    "KcEndpoint": {
+      "type": "string",
+      "value": "[if(equals(parameters('Deploy Type'),'normal'),reference(resourceId('Microsoft.Network/publicIPAddresses', variables('lbPublicIpName'))).ipAddress,reference(resourceId('Microsoft.Network/loadBalancers', variables('lbName'))).frontendIPConfigurations[0].properties.privateIPAddress)]"
+    },
+    "Base64Tags": {
+      "type": "string",
+      "value": "[variables('base64Tags')]"
+    },
+    "IsHa": {
+      "type": "string",
+      "value": "variables('isHa')"
+    }
+  }
+}
